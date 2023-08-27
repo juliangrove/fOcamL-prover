@@ -31,7 +31,7 @@ let elem : signed -> signed list -> bool = fun sf l ->
 let delta_rule : quantifier_rule = fun sfs sf ->
   let name_t v f =
     let rec name0 i =
-      if elem (subst v (n (name i)) f, true) sfs
+      if elem (subst v (n (name i)) f, true) sfs && i < 10
       then name0 (i + 1)
       else name i in
     name0 0
@@ -47,19 +47,17 @@ let delta_rule : quantifier_rule = fun sfs sf ->
   | _ -> [sf]
 
 let gamma_rule : quantifier_rule = fun sfs sf ->
-  let name0 = match concat_map (fun (f, b) -> names_formula f) sfs with
-      [] -> name 0
-    | ns -> fresh_n ns in
+  let name_fresh = fresh_n (concat_map (fun (f, b) -> names_formula f) sfs) in
   match sf with
-    (Exists (v0, f0), true) -> [(subst v0 (n name0) f0, true)]
-  | (Forall (v0, f0), false) -> [(subst v0 (n name0) f0, false)]
+    (Exists (v0, f0), true) -> [(subst v0 (n name_fresh) f0, true)]
+  | (Forall (v0, f0), false) -> [(subst v0 (n name_fresh) f0, false)]
   | _ -> [sf]
 
 let rec apply_rule : propositional_rule -> signed list -> signed list list =
   fun rule sfs -> match sfs with
       [(Top, true)] -> [[(Top, true)]]
     | [] -> [[(Top, true)]]
-    | sf0 :: sfs0 -> let just_the_first g = map (append g) (rule sf0) in
+    | sf0 :: sfs0 -> let just_the_first g = map (fun f -> f @ g) (rule sf0) in
       concat_map just_the_first (apply_rule rule sfs0)
 
 let apply_quant_rule : quantifier_rule -> signed list -> signed list =

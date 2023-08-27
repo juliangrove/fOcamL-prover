@@ -66,7 +66,7 @@ let rec names_formula : formula -> name list = fun f ->
 
 let rec maximum : int list -> int = fun l ->
   match l with
-    [] -> 0
+    [] -> -1
   | i :: l0 -> max i (maximum l0)
 
 let fresh_v : var list -> var = fun vs -> var (maximum (map unvar vs) + 1)
@@ -75,7 +75,7 @@ let fresh_n : name list -> name = fun ns -> name (maximum (map unname ns) + 1)
 let subst_term : var -> term -> term -> term = fun v0 t0 t1 ->
   match t1 with
     V v1 -> if v1 = v0 then t0 else t1
-  | N _ -> t0
+  | N _ -> t1
 
 let rec subst : var -> term -> formula -> formula = fun v0 t0 f0 ->
   match f0 with
@@ -84,7 +84,7 @@ let rec subst : var -> term -> formula -> formula = fun v0 t0 f0 ->
   | Bot -> Bot
   | And (f1, f2) -> subst v0 t0 f1 &&& subst v0 t0 f2
   | Or (f1, f2) -> subst v0 t0 f1 ||| subst v0 t0 f2
-  | Not f0 -> not' f0
+  | Not f1 -> not' (subst v0 t0 f1)
   | Forall (v1, f1) -> (match v1 = v0 with
         true -> forall v1 f1
       | false -> match t0 with
@@ -92,7 +92,7 @@ let rec subst : var -> term -> formula -> formula = fun v0 t0 f0 ->
               false -> forall v1 (subst v0 t0 f1)
             | true -> let vnew = fresh_v (v1 :: fv_formula f1) in
               let fnew = subst v1 (v vnew) f1 in
-              forall vnew fnew)
+              forall vnew (subst v0 t0 fnew))
         | N _ -> forall v1 (subst v0 t0 f1))
   | Exists (v1, f1) -> (match v1 = v0 with
         true -> exists v1 f1
@@ -101,7 +101,7 @@ let rec subst : var -> term -> formula -> formula = fun v0 t0 f0 ->
               false -> exists v1 (subst v0 t0 f1)
             | true -> let vnew = fresh_v (v1 :: fv_formula f1) in
               let fnew = subst v1 (v vnew) f1 in
-              exists vnew fnew)
+              exists vnew (subst v0 t0 fnew))
           | N _ -> exists v1 (subst v0 t0 f1)))
 
 let rec (===) : formula -> formula -> bool = fun f0 f1 ->
@@ -109,9 +109,9 @@ let rec (===) : formula -> formula -> bool = fun f0 f1 ->
     (Pred (i, l), Pred (j, m)) -> i = j && l = m
   | (Top, Top) -> true
   | (Bot, Bot) -> true
-  | (And (f0, f1), And (f0', f1')) -> f0 = f0' && f1 = f1'
-  | (Or (f0, f1), Or (f2, f3)) -> f0 = f2 && f1 = f3
-  | (Not f0, Not f1) -> f0 = f1
+  | (And (f0, f1), And (f0', f1')) -> f0 === f0' && f1 === f1'
+  | (Or (f0, f1), Or (f2, f3)) -> f0 === f2 && f1 === f3
+  | (Not f0, Not f1) -> f0 === f1
   | (Forall (v0, f0), Forall (v1, f1)) ->
     let vnew = fresh_v (append (fv_formula f0) (fv_formula f1)) in
     let f0new = subst v0 (v vnew) f0
