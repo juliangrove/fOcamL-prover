@@ -28,10 +28,10 @@ let elem : signed -> signed list -> bool = fun sf l ->
     Some _ -> true
   | None -> false
     
-let delta_rule : quantifier_rule = fun sfs sf ->
+let gamma_rule : quantifier_rule = fun sfs sf ->
   let name_t v f =
     let rec name0 i =
-      if elem (subst v (n (name i)) f, true) sfs && i < 10
+      if elem (subst v (n (name i)) f, true) sfs
       then name0 (i + 1)
       else name i in
     name0 0
@@ -46,8 +46,8 @@ let delta_rule : quantifier_rule = fun sfs sf ->
   | (Exists (v0, f0), false) -> [(subst v0 (n (name_f v0 f0)) f0, false); sf]
   | _ -> [sf]
 
-let gamma_rule : quantifier_rule = fun sfs sf ->
-  let name_fresh = fresh_n (concat_map (fun (f, b) -> names_formula f) sfs) in
+let delta_rule : quantifier_rule = fun sfs sf ->
+  let name_fresh = fresh_n (concat_map (fun (f, _) -> names_formula f) sfs) in
   match sf with
     (Exists (v0, f0), true) -> [(subst v0 (n name_fresh) f0, true)]
   | (Forall (v0, f0), false) -> [(subst v0 (n name_fresh) f0, false)]
@@ -72,8 +72,8 @@ let apply_quant_rule : quantifier_rule -> signed list -> signed list =
     apply_quant_rule0 rule (sfs, [(Top, true)])
 
 let all_rules : signed list -> signed list list = fun sfs ->
-  map (apply_quant_rule gamma_rule)
-    (map (apply_quant_rule delta_rule)
+  map (apply_quant_rule delta_rule)
+    (map (apply_quant_rule gamma_rule)
        (concat_map (apply_rule not_rule)
           (concat_map (apply_rule and_rule)
              (apply_rule or_rule sfs))))
