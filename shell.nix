@@ -10,7 +10,7 @@ pkgs.stdenv.mkDerivation {
   buildInputs = with pkgs.ocamlPackages; [
     dune_3
     findlib
-    pkgs.ocaml
+    ocaml
     ocamlbuild
     ocp-indent
     merlin
